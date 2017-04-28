@@ -1,15 +1,28 @@
 $(document).ready(function() {
 
-	var dateNow = moment().format("MM/DD/YY")
+    var dateNow = moment().format("MM/DD/YY")
+    var currentTime = moment();
+    var trainName;
+    var destination;
+    var firstTrain;
+    var frequency;
+    var firstTime;
+    var difference;
+    var remaining;
+    var minutesAway;
+    var nextArrival;
+    var nextArrivalTime;
+    $("#current-time").html(moment())
 
     var config = {
-        apiKey: "AIzaSyD0kzx5nogsv9Lysw0Q1nV1biCvRWEaobw",
-        authDomain: "employee-management-fd5c3.firebaseapp.com",
-        databaseURL: "https://employee-management-fd5c3.firebaseio.com",
-        projectId: "employee-management-fd5c3",
-        storageBucket: "employee-management-fd5c3.appspot.com",
-        messagingSenderId: "414685589563"
+        apiKey: "AIzaSyDO0PeF_FJtatGVVJtwN6cB7Msgf3gzHuE",
+        authDomain: "train-2f24a.firebaseapp.com",
+        databaseURL: "https://train-2f24a.firebaseio.com",
+        projectId: "train-2f24a",
+        storageBucket: "train-2f24a.appspot.com",
+        messagingSenderId: "619234746060"
     };
+
     firebase.initializeApp(config);
 
     var database = firebase.database();
@@ -18,31 +31,41 @@ $(document).ready(function() {
 
         event.preventDefault();
 
-        var userName = $("#input-name").val().trim();
-        var userPosition = $("#input-position").val().trim();
-        var startDate = $("#input-start").val().trim();
-        var monthsWorked = moment(dateNow).diff(moment(startDate), "months");
-        var monthlyRate = $("#input-monthly").val().trim();
-        var totalBilled = monthsWorked * monthlyRate;
+        trainName = $("#input-name").val().trim();
+        destination = $("#input-destination").val().trim();
+        frequency = $("#input-frequency").val().trim();
+        firstTrain = $("#input-first").val().trim()
+        firstTrainTime = moment(firstTrain, "HH:mm").subtract(10, "years");
 
-        database.ref("/users").push({
-            userName: userName,
-            userPosition: userPosition,
-            startDate: startDate,
-            monthsWorked: monthsWorked,
-            monthlyRate: monthlyRate,
-            totalBilled: totalBilled
+        database.ref("/train").push({
+            trainName: trainName,
+            destination: destination,
+            firstTrain: firstTrain,
+            frequency: frequency,
         });
     });
 
-    database.ref("/users").on("child_added", function(snapshot, prevChildKey) {
+    setInterval(function(){
+        $("tbody").empty()
+        database.ref("/train").on("child_added", function(snapshot) {
+            var key = snapshot.key
+            var train = snapshot.val();
+            var displayFirstTrain = moment(train.firstTrain, "hh:mm");
+            var displayDifference = moment().diff(moment(displayFirstTrain), "minutes");
+            var displayRemaining = displayDifference % train.frequency;
+            var displayMinutesAway = train.frequency - displayRemaining;
+            var displayNextArrival = moment().add(displayMinutesAway, "minutes");
+            var displayNextArrivalTime = moment(displayNextArrival).format("hh:mm");
+            $("tbody").append("<tr><td>" + train.trainName + "</td><td>" + train.destination + "</td><td>Every " + train.frequency + " minutes</td><td>" + displayNextArrivalTime + "</td><td>" + displayMinutesAway + "</td><td>" +  "<button type='button' class='btn btn-default id='"+key+"'>X</button></tr>");
+        });
+    }, 1000)
 
-        $("tbody").append("<tr><td>" + snapshot.val().userName 
-        	+ "</td><td>" + snapshot.val().userPosition 
-        	+ "</td><td>" + snapshot.val().startDate 
-        	+ "</td><td>" + snapshot.val().monthsWorked 
-        	+ "</td><td>$" + snapshot.val().monthlyRate 
-        	+ "</td><td>$" + snapshot.val().totalBilled 
-        	+ "</td></tr>");
-    });
+    // didn't get the button to work :(
+    
+    $("button").click(function(){
+        database.ref("/train").on("child_remove", function(snapshot){
+            var key = snapshot.key
+        })
+    })
+
 })
